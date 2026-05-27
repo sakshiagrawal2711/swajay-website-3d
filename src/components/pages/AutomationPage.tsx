@@ -1,9 +1,58 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { FileText, Bot, Cpu, Code2, Database, BarChart3, Brain, ArrowRight, Rocket, Flag, Sparkles, TrendingDown, TrendingUp, AlertCircle, DollarSign, Users, Workflow, ScanLine, Network, ShieldCheck, Plug, Building, ChevronRight } from 'lucide-react'
 import { AnimatedSection, StaggerContainer, staggerItem } from '../ui/AnimatedSection'
 import { GlassCard } from '../ui/GlassCard'
 import { GradientOrb } from '../ui/GradientOrb'
+import { IsometricAIScene } from '../ui/isometric-ai-scene'
+
+/* ─── Connector line between phase circles ───────────────────────────────── */
+function ConnectorLine({
+  left, right, delay, gradientFrom, gradientTo,
+}: {
+  left: string; right: string; delay: number
+  gradientFrom: string; gradientTo: string
+}) {
+  return (
+    <div
+      className="hidden md:block absolute top-10"
+      style={{ left, right }}
+    >
+      {/* dim track */}
+      <div className="h-px bg-border/30" />
+      {/* clip wrapper — keeps glow from bleeding into circles */}
+      <div className="absolute inset-0 overflow-hidden">
+        {/* animated fill */}
+        <motion.div
+          className="absolute inset-0 h-px origin-left"
+          style={{ background: `linear-gradient(to right, ${gradientFrom}, ${gradientTo})` }}
+          initial={{ scaleX: 0 }}
+          whileInView={{ scaleX: 1 }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay }}
+        />
+        {/* soft glow */}
+        <motion.div
+          className="absolute inset-0 h-px origin-left blur-[3px] opacity-60"
+          style={{ background: `linear-gradient(to right, ${gradientFrom}, ${gradientTo})` }}
+          initial={{ scaleX: 0 }}
+          whileInView={{ scaleX: 1 }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay }}
+        />
+      </div>
+      {/* travelling spark */}
+      <motion.div
+        className="absolute top-1/2 -translate-y-1/2 w-2 h-2 -ml-1 rounded-full bg-white pointer-events-none"
+        style={{ boxShadow: `0 0 8px 3px ${gradientTo}cc` }}
+        initial={{ left: '0%', opacity: 0 }}
+        whileInView={{ left: ['0%', '100%'], opacity: [0, 1, 1, 0] }}
+        viewport={{ once: true, margin: '-80px' }}
+        transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay, times: [0, 0.05, 0.9, 1] }}
+      />
+    </div>
+  )
+}
 
 const BOTTLENECKS = [
   { icon: FileText,  title: 'Intelligent Document Processing',   desc: 'AI-powered extraction and validation across documents (deeds, mortgages, releases) with greater speed and accuracy.',       impact: '99%+ accuracy with 70% faster processing',                    color: 'from-[#6495ed] via-[#6c5ce7] to-[#8e44ad]' },
@@ -21,12 +70,12 @@ const PHASES = [
 ]
 
 const OPERATING_MODEL = [
-  { title: 'Intake Automation',                    color: 'from-red-500 to-red-600' },
-  { title: 'AI Assisted Title Search',             color: 'from-green-500 to-green-600' },
-  { title: 'Automation for Title Examination',     color: 'from-[#6495ed] to-[#6c5ce7]' },
-  { title: 'Curative Automation',                  color: 'from-[#6c5ce7] to-[#8e44ad]' },
-  { title: 'Settlement & Closing Support Automation', color: 'from-orange-500 to-orange-600' },
-  { title: 'Digital Delivery',                     color: 'from-rose-500 to-rose-600' },
+  { title: 'Intake Automation',                       color: 'from-[#4472cc] to-[#6495ed]' },
+  { title: 'AI Assisted Title Search',                color: 'from-[#6495ed] to-[#6c5ce7]' },
+  { title: 'Automation for Title Examination',        color: 'from-[#6c5ce7] to-[#7c4af5]' },
+  { title: 'Curative Automation',                     color: 'from-[#7c3aed] to-[#6940d8]' },
+  { title: 'Settlement & Closing Support Automation', color: 'from-[#8e44ad] to-[#7c3aed]' },
+  { title: 'Digital Delivery',                        color: 'from-[#b04dcc] to-[#8e44ad]' },
 ]
 
 const OVERLAYS = [
@@ -46,36 +95,73 @@ const METRICS = [
   { icon: Users,        label: 'Higher lender retention due to SLA consistency',    up: true  },
 ]
 
-export function AutomationPage({ onContact }: { onContact: () => void }) {
-  const [activeTab, setActiveTab] = useState<'ai' | 'strategy'>('ai')
+export function AutomationPage({ onContact, initialTab, scrollToSection, navKey }: {
+  onContact: () => void
+  initialTab?: 'ai' | 'strategy'
+  scrollToSection?: string
+  navKey?: number
+}) {
+  const [activeTab, setActiveTab] = useState<'ai' | 'strategy'>(initialTab ?? 'ai')
+
+  useEffect(() => {
+    if (initialTab) setActiveTab(initialTab)
+    if (!scrollToSection) return
+    const id = setTimeout(() => {
+      document.getElementById(scrollToSection)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 420)
+    return () => clearTimeout(id)
+  }, [navKey, initialTab, scrollToSection])
 
   return (
-    <div className="pt-20 bg-background overflow-hidden">
+    <div className="pt-[86px] bg-background overflow-hidden">
 
-      {/* Hero */}
-      <section className="py-24 relative overflow-hidden bg-card/40">
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      <section className="py-16 md:py-20 relative overflow-hidden bg-card/40">
         <div className="absolute inset-0 bg-grid-dark opacity-25" />
         <GradientOrb size={500} color="purple" className="top-0 left-0 opacity-40" />
         <GradientOrb size={400} color="blue"   className="bottom-0 right-0 opacity-35" />
 
         <div className="relative z-10 max-w-[1400px] mx-auto px-4 sm:px-8 lg:px-12">
-          <div className="grid md:grid-cols-2 gap-14 items-center">
+          <div className="grid md:grid-cols-2 gap-10 items-center">
+
+            {/* ── Left: text + tabs ─────────────────────────────────────── */}
             <AnimatedSection direction="left">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                 <span className="text-[11px] font-semibold tracking-[0.18em] text-primary uppercase">Process Focus</span>
               </div>
+
               <h1 className="text-5xl md:text-6xl font-extrabold text-foreground mb-5 leading-tight tracking-[-0.02em]">
                 AI &{' '}
                 <span className="text-gradient">Automation</span>
               </h1>
+
               <p className="text-xl text-muted-foreground leading-relaxed mb-8">
-                We apply specific AI solutions to mission-critical mortgage and title processes, transforming time-consuming tasks into compliant, automated workflows.
+                We apply specific AI solutions to mission-critical mortgage and title processes,
+                transforming time-consuming tasks into compliant, automated workflows.
               </p>
+
+              {/* Stat pills */}
+              <div className="flex flex-wrap gap-3 mb-8">
+                {[
+                  { value: '70%',  label: 'Faster processing' },
+                  { value: '99%+', label: 'Accuracy' },
+                  { value: '90%',  label: 'Cycle time cut' },
+                ].map(({ value, label }) => (
+                  <div key={label}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-background border border-border"
+                  >
+                    <span className="text-sm font-extrabold text-gradient">{value}</span>
+                    <span className="text-xs text-muted-foreground">{label}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Tab switcher */}
               <div className="flex flex-wrap gap-3">
                 {[
                   { id: 'ai'       as const, Icon: Brain,    label: 'Artificial Intelligence' },
-                  { id: 'strategy' as const, Icon: Building, label: 'Mortgage Title Automation Strategy' },
+                  { id: 'strategy' as const, Icon: Building, label: 'Mortgage Title Automation' },
                 ].map(({ id, Icon, label }) => (
                   <motion.button
                     key={id}
@@ -93,34 +179,11 @@ export function AutomationPage({ onContact }: { onContact: () => void }) {
               </div>
             </AnimatedSection>
 
-            {/* Diamond diagram */}
-            <AnimatedSection direction="right">
-              <div className="relative flex items-center justify-center min-h-[340px]">
-                <GradientOrb size={300} color="purple" className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-                <div className="relative w-full max-w-sm">
-                  <div className="grid grid-cols-2 gap-6 mb-6">
-                    {['Business Objectives', 'Task Automation'].map((label, i) => (
-                      <motion.div key={label}
-                        animate={{ y: [0, -8, 0] }}
-                        transition={{ duration: 3 + i, repeat: Infinity, ease: 'easeInOut', delay: i * 0.5 }}
-                        className="flex flex-col items-center gap-4"
-                      >
-                        <div className={`w-20 h-20 bg-gradient-to-br ${i === 0 ? 'from-[#6495ed] via-[#6c5ce7] to-[#8e44ad]' : 'from-[#6c5ce7] to-[#8e44ad]'} transform rotate-45 rounded-xl shadow-glow`} />
-                        <span className="text-sm font-bold text-foreground text-center">{label}</span>
-                      </motion.div>
-                    ))}
-                  </div>
-                  <motion.div
-                    animate={{ y: [0, -8, 0] }}
-                    transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-                    className="flex flex-col items-center gap-4"
-                  >
-                    <div className="w-20 h-20 bg-gradient-to-br from-[#6495ed] to-[#8e44ad] transform rotate-45 rounded-xl shadow-glow" />
-                    <span className="text-sm font-bold text-foreground">Process Automation</span>
-                  </motion.div>
-                </div>
-              </div>
+            {/* ── Right: Isometric AI scene ─────────────────────────────── */}
+            <AnimatedSection direction="right" className="flex items-center justify-center">
+              <IsometricAIScene />
             </AnimatedSection>
+
           </div>
         </div>
       </section>
@@ -134,7 +197,7 @@ export function AutomationPage({ onContact }: { onContact: () => void }) {
 function AIContent({ onContact }: { onContact: () => void }) {
   return (
     <>
-      <section className="py-24 bg-background">
+      <section id="automation-solutions" className="py-24 bg-background scroll-mt-[86px]">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-8 lg:px-12">
           <AnimatedSection className="text-center mb-16">
             <p className="text-[11px] font-semibold tracking-[0.18em] text-primary uppercase mb-4">Real-world Impact</p>
@@ -177,7 +240,19 @@ function AIContent({ onContact }: { onContact: () => void }) {
           </AnimatedSection>
 
           <div className="relative">
-            <div className="hidden md:block absolute top-10 left-[16%] right-[16%] h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+            {/* ── Animated connector lines (2 segments, skip each circle) ── */}
+            {/* Segment 1: right edge of circle 1 → left edge of circle 2 */}
+            <ConnectorLine
+              left="21%"  right="54%"
+              delay={0.4}
+              gradientFrom="#6495ed" gradientTo="#8b5cf6"
+            />
+            {/* Segment 2: right edge of circle 2 → left edge of circle 3 */}
+            <ConnectorLine
+              left="54%"  right="21%"
+              delay={0.75}
+              gradientFrom="#8b5cf6" gradientTo="#8e44ad"
+            />
             <StaggerContainer className="grid md:grid-cols-3 gap-8" stagger={0.12}>
               {PHASES.map(({ icon: Icon, title, desc }, idx) => (
                 <motion.div key={idx} variants={staggerItem} className="text-center">
@@ -216,7 +291,7 @@ function StrategyContent({ onContact }: { onContact: () => void }) {
   return (
     <>
       {/* Target Operating Model */}
-      <section className="py-24 bg-background">
+      <section id="automation-strategy" className="py-24 bg-background scroll-mt-[86px]">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-8 lg:px-12">
           <AnimatedSection className="text-center mb-14">
             <p className="text-[11px] font-semibold tracking-[0.18em] text-primary uppercase mb-4">Architecture</p>
@@ -231,9 +306,11 @@ function StrategyContent({ onContact }: { onContact: () => void }) {
               <div key={item.title} className="flex items-center gap-2">
                 <motion.div
                   whileHover={{ scale: 1.05, y: -4 }}
-                  className={`bg-gradient-to-br ${item.color} text-white rounded-xl px-4 py-4 w-36 h-24 flex items-center justify-center text-center shadow-glow-sm cursor-default`}
+                  className={`relative bg-gradient-to-br ${item.color} text-white rounded-xl px-4 py-4 w-36 h-24 flex items-center justify-center text-center shadow-glow-sm cursor-default overflow-hidden`}
                 >
-                  <span className="text-sm font-bold leading-tight">{item.title}</span>
+                  {/* top-edge sheen */}
+                  <div className="absolute top-0 left-0 right-0 h-px bg-white/25" />
+                  <span className="relative text-sm font-bold leading-tight drop-shadow">{item.title}</span>
                 </motion.div>
                 {i < OPERATING_MODEL.length - 1 && <ChevronRight className="w-5 h-5 text-muted-foreground" />}
               </div>

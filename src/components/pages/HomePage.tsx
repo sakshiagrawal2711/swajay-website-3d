@@ -78,7 +78,7 @@ function HeroSection({ onNav }: { onNav: (p: Page) => void }) {
             style={{ fontSize: 'clamp(42px, 4.8vw, 66px)' }}
           >
             <span className="block text-foreground">Transforming</span>
-            <span className="block" style={{ background: 'linear-gradient(135deg, #6c5ce7 0%, #8e44ad 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Mortgage</span>
+            <span className="block pb-[0.12em]" style={{ background: 'linear-gradient(135deg, #6c5ce7 0%, #8e44ad 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Mortgage</span>
             <span className="block text-foreground">Operations</span>
             <span className="block" style={{ background: 'linear-gradient(135deg, #6c5ce7 0%, #8e44ad 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>with AI</span>
           </motion.h1>

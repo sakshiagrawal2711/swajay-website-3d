@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useSmoothScroll } from './hooks/useSmoothScroll'
+import { useSmoothScroll, scrollToTop } from './hooks/useSmoothScroll'
 import { Navbar } from './components/Navbar'
 import { Footer } from './components/Footer'
 import { HomePage } from './components/pages/HomePage'
@@ -9,20 +9,39 @@ import { ServicesPage } from './components/pages/ServicesPage'
 import { AutomationPage } from './components/pages/AutomationPage'
 import { CaseStudiesPage } from './components/pages/CaseStudiesPage'
 import { ContactPage } from './components/pages/ContactPage'
+import { PrivacyPolicyPage } from './components/pages/PrivacyPolicyPage'
+import { TermsOfServicePage } from './components/pages/TermsOfServicePage'
 
-type Page = 'home' | 'about' | 'services' | 'automation' | 'case-studies' | 'contact'
+type Page = 'home' | 'about' | 'services' | 'automation' | 'case-studies' | 'contact' | 'privacy' | 'terms'
+
+export type NavExtra = {
+  section?: string
+  servicesTab?: 'mortgage' | 'technology'
+  automationTab?: 'ai' | 'strategy'
+  caseStudyId?: string
+}
 
 export default function App() {
   useSmoothScroll()
-  const [page, setPage] = useState<Page>('home')
+  const [page, setPage]         = useState<Page>('home')
+  const [navExtra, setNavExtra] = useState<NavExtra | null>(null)
+  // Increments on every targeted nav so useEffect deps always differ, even
+  // when tab/section values are the same (e.g. clicking two mortgage items).
+  const [navKey, setNavKey]     = useState(0)
 
   useEffect(() => {
     document.documentElement.classList.add('dark')
   }, [])
 
-  const handleNav = (p: Page) => {
+  const handleNav = (p: Page, extra?: NavExtra) => {
     setPage(p)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    scrollToTop() // bypasses Lenis' internal state correctly
+    if (extra) {
+      setNavExtra(extra)
+      setNavKey(k => k + 1)
+    } else {
+      setNavExtra(null)
+    }
   }
 
   return (
@@ -38,10 +57,28 @@ export default function App() {
         >
           {page === 'home'         && <HomePage onNav={handleNav} />}
           {page === 'about'        && <AboutPage />}
-          {page === 'services'     && <ServicesPage onContact={() => handleNav('contact')} />}
-          {page === 'automation'   && <AutomationPage onContact={() => handleNav('contact')} />}
-          {page === 'case-studies' && <CaseStudiesPage />}
+          {page === 'services'     && (
+            <ServicesPage
+              onContact={() => handleNav('contact')}
+              initialTab={navExtra?.servicesTab}
+              scrollToSection={navExtra?.section}
+              navKey={navKey}
+            />
+          )}
+          {page === 'automation'   && (
+            <AutomationPage
+              onContact={() => handleNav('contact')}
+              initialTab={navExtra?.automationTab}
+              scrollToSection={navExtra?.section}
+              navKey={navKey}
+            />
+          )}
+          {page === 'case-studies' && (
+            <CaseStudiesPage openCaseId={navExtra?.caseStudyId} navKey={navKey} />
+          )}
           {page === 'contact'      && <ContactPage />}
+          {page === 'privacy'      && <PrivacyPolicyPage />}
+          {page === 'terms'        && <TermsOfServicePage />}
         </motion.main>
       </AnimatePresence>
       <Footer onNav={handleNav} />

@@ -1,14 +1,69 @@
-import type { CSSProperties } from 'react'
-import { motion } from 'framer-motion'
-import { Sparkles, Target, Eye, CheckCircle2, Briefcase, TrendingUp, Handshake, Zap } from 'lucide-react'
+import { useRef, useCallback, useEffect, useState, type CSSProperties } from 'react'
+import { motion, useMotionValue, useInView, animate } from 'framer-motion'
+import {
+  Sparkles, Target, Eye, CheckCircle2,
+  Briefcase, TrendingUp, Handshake, Zap,
+  ChevronDown, Mail,
+} from 'lucide-react'
 import { AnimatedSection, StaggerContainer, staggerItem } from '../ui/AnimatedSection'
 import { GradientOrb } from '../ui/GradientOrb'
+import { InteractiveRobotSpline } from '../ui/interactive-3d-robot'
+
+/* ─── CountUp helper ────────────────────────────────────────────────────── */
+
+/** Parse a display string like "100%", "24/7", "99.7%" into parts */
+function parseStatValue(v: string) {
+  const m = v.match(/^([^0-9]*)([0-9]+\.?[0-9]*)(.*)$/)
+  if (!m) return { target: 0, prefix: '', suffix: v, decimals: 0 }
+  const decimals = m[2].includes('.') ? m[2].split('.')[1].length : 0
+  return { prefix: m[1], target: parseFloat(m[2]), suffix: m[3], decimals }
+}
+
+interface CountUpNumberProps {
+  value: string
+  delay?: number
+  className?: string
+}
+
+function CountUpNumber({ value, delay = 0, className }: CountUpNumberProps) {
+  const ref = useRef<HTMLSpanElement>(null)
+  const isInView = useInView(ref, { once: true, margin: '-60px' })
+  const { prefix, target, suffix, decimals } = parseStatValue(value)
+  const count = useMotionValue(0)
+  const [display, setDisplay] = useState('0')
+
+  useEffect(() => {
+    if (!isInView) return
+    const ctrl = animate(count, target, {
+      duration: 2.2,
+      delay,
+      ease: [0.16, 1, 0.3, 1],          // fast start, soft landing
+      onUpdate: (latest) =>
+        setDisplay(
+          decimals > 0
+            ? latest.toFixed(decimals)
+            : Math.floor(latest).toString()
+        ),
+    })
+    return () => ctrl.stop()
+  }, [isInView, count, target, decimals, delay])
+
+  return (
+    <span ref={ref} className={className}>
+      {prefix}{display}{suffix}
+    </span>
+  )
+}
+
+/* ─── Constants ──────────────────────────────────────────────────────────── */
+
+const ROBOT_SCENE_URL = 'https://prod.spline.design/PyzDhpQ9E5f1E3MT/scene.splinecode'
 
 const ADVANTAGES = [
-  { icon: Briefcase,  label: 'Deep Industry\nExperience' },
-  { icon: TrendingUp, label: 'Multidisciplinary\nExecution' },
-  { icon: Handshake,  label: 'Scalable Delivery\nModel' },
-  { icon: Zap,        label: 'Strategic Advisory\nNetwork' },
+  { icon: Briefcase,   label: 'Deep Industry\nExperience' },
+  { icon: TrendingUp,  label: 'Multidisciplinary\nExecution' },
+  { icon: Handshake,   label: 'Scalable Delivery\nModel' },
+  { icon: Zap,         label: 'Strategic Advisory\nNetwork' },
 ]
 
 const STATS = [
@@ -19,83 +74,276 @@ const STATS = [
 ]
 
 const TEAM = [
-  { name: 'Raju Gourishetty',         img: '/muniraju.png' },
-  { name: 'Nagaraj Srinivasamurthy',  img: '/nagaraj.jpg' },
-  { name: 'Muniraju S',               img: '/raju.jpg' },
-  { name: 'Thirumalesh M V',          img: '/thiru.png' },
+  {
+    name:     'Raju Gourishetty',
+    img:      '/muniraju.png',
+    email:    'raju.gourishetty@swajay.com',
+    linkedin: 'https://linkedin.com/in/raju-gourishetty',
+  },
+  {
+    name:     'Nagaraj Srinivasamurthy',
+    img:      '/nagaraj.jpg',
+    email:    'nagaraj.srinivasamurthy@swajay.com',
+    linkedin: 'https://linkedin.com/in/nagaraj-srinivasamurthy',
+  },
+  {
+    name:     'Muniraju S',
+    img:      '/raju.jpg',
+    email:    'muniraju.s@swajay.com',
+    linkedin: 'https://linkedin.com/in/muniraju-s',
+  },
+  {
+    name:     'Thirumalesh M V',
+    img:      '/thiru.png',
+    email:    'thirumalesh.mv@swajay.com',
+    linkedin: 'https://linkedin.com/in/thirumalesh-mv',
+  },
 ]
 
 const PARTNERS = ['Resware', 'Qualia', 'SoftPro', 'Encompass', 'ICE Mortgage Technology']
 
+/* ─── Spotlight gradient builders ───────────────────────────────────────── */
+
+/** Dark-vignette with a bright "hole" wherever the robot looks */
+function buildActiveSpotlight(x: number, y: number): string {
+  return `radial-gradient(
+    circle 400px at ${x}px ${y}px,
+    transparent            0%,
+    transparent           18%,
+    rgba(8, 7, 20, 0.28)  42%,
+    rgba(8, 7, 20, 0.58)  68%,
+    rgba(8, 7, 20, 0.74) 100%
+  )`
+}
+
+/** Soft center-default before first mouse interaction */
+const defaultSpotlight =
+  `radial-gradient(
+    circle 360px at 30% 50%,
+    transparent            0%,
+    transparent           12%,
+    rgba(8, 7, 20, 0.22)  38%,
+    rgba(8, 7, 20, 0.52)  65%,
+    rgba(8, 7, 20, 0.68) 100%
+  )`
+
+/** Warm-halo glow that sits *on top* of text in spotlight center */
+function buildGlowSpotlight(x: number, y: number): string {
+  return `radial-gradient(
+    circle 320px at ${x}px ${y}px,
+    rgba(255, 220, 140, 0.13)  0%,
+    rgba(180, 110, 255, 0.09) 35%,
+    transparent               70%
+  )`
+}
+
+const defaultGlow =
+  `radial-gradient(
+    circle 280px at 30% 50%,
+    rgba(180, 110, 255, 0.07) 0%,
+    transparent              60%
+  )`
+
+/* ─── Component ──────────────────────────────────────────────────────────── */
+
 export function AboutPage() {
+  const heroRef     = useRef<HTMLElement>(null)
+  const vignRef     = useRef<HTMLDivElement>(null)   // dark-vignette overlay
+  const glowRef     = useRef<HTMLDivElement>(null)   // warm-glow overlay
+  const hasMovedRef = useRef(false)
+
+  /* Direct DOM writes — zero React re-renders, silky smooth at 60fps */
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLElement>) => {
+    const rect = heroRef.current?.getBoundingClientRect()
+    if (!rect) return
+
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+
+    if (vignRef.current) {
+      vignRef.current.style.background = buildActiveSpotlight(x, y)
+    }
+    if (glowRef.current) {
+      glowRef.current.style.background = buildGlowSpotlight(x, y)
+      if (!hasMovedRef.current) {
+        glowRef.current.style.opacity = '1'
+        hasMovedRef.current = true
+      }
+    }
+  }, [])
+
+  const handleMouseLeave = useCallback(() => {
+    if (vignRef.current) vignRef.current.style.background = defaultSpotlight
+    if (glowRef.current) {
+      glowRef.current.style.background = defaultGlow
+      glowRef.current.style.opacity = '0.6'
+      hasMovedRef.current = false
+    }
+  }, [])
+
   return (
-    <div className="pt-20 bg-background overflow-hidden">
+    <div className="bg-background overflow-hidden">
 
-      {/* ─── Hero ─── */}
-      <section className="py-24 relative overflow-hidden bg-card/40">
-        <div className="absolute inset-0 bg-grid-dark opacity-30" />
-        <GradientOrb size={500} color="purple" className="top-0 right-0 opacity-40" />
+      {/* ══════════════════════════════════════════════════════════════════════
+          HERO  —  Interactive 3-D Robot with spotlight-on-text effect
+      ══════════════════════════════════════════════════════════════════════ */}
+      <section
+        ref={heroRef}
+        className="relative w-full min-h-screen overflow-hidden pt-[86px]"
+        style={{ background: '#09090f' }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+      >
 
-        <div className="relative z-10 max-w-[1400px] mx-auto px-4 sm:px-8 lg:px-12">
-          <div className="grid md:grid-cols-2 gap-14 items-center">
-            <AnimatedSection direction="left">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                <span className="text-[11px] font-semibold tracking-[0.18em] text-primary uppercase">About Us</span>
+        {/* ── Ambient background mesh ── */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `
+              radial-gradient(ellipse 70% 60% at 20% 30%,  rgba(108, 92, 231, 0.14) 0%, transparent 65%),
+              radial-gradient(ellipse 50% 50% at 80% 70%,  rgba(142, 68, 173, 0.10) 0%, transparent 65%),
+              radial-gradient(ellipse 60% 55% at 55% 10%,  rgba(100, 149, 237, 0.08) 0%, transparent 65%),
+              #09090f
+            `,
+          }}
+        />
+
+        {/* ── Robot scene (right 65 %) ── */}
+        <div className="absolute inset-y-0 right-0 w-full md:w-[65%] z-10">
+          <InteractiveRobotSpline
+            scene={ROBOT_SCENE_URL}
+            className="w-full h-full"
+          />
+        </div>
+
+        {/* ── Left-fade — blends robot into dark bg so text is readable ── */}
+        <div
+          className="absolute inset-0 z-20 pointer-events-none"
+          style={{
+            background:
+              'linear-gradient(to right, #09090f 28%, rgba(9,9,15,0.72) 52%, transparent 78%)',
+          }}
+        />
+
+        {/* ── Bottom fade — hero → page ── */}
+        <div
+          className="absolute bottom-0 left-0 right-0 h-40 z-20 pointer-events-none"
+          style={{
+            background: 'linear-gradient(to top, var(--background) 0%, transparent 100%)',
+          }}
+        />
+
+        {/* ── Dark vignette with spotlight "hole" ── */}
+        <div
+          ref={vignRef}
+          className="absolute inset-0 z-30 pointer-events-none"
+          style={{ background: defaultSpotlight }}
+        />
+
+        {/* ── Warm glow at spotlight center (additive brightness) ── */}
+        <div
+          ref={glowRef}
+          className="absolute inset-0 z-40 pointer-events-none"
+          style={{
+            background: defaultGlow,
+            opacity: 0.6,
+            mixBlendMode: 'screen',
+            transition: 'opacity 0.4s ease',
+          }}
+        />
+
+        {/* ── Text content ── */}
+        <div className="relative z-50 max-w-[1400px] mx-auto px-4 sm:px-8 lg:px-12">
+          <div className="min-h-screen flex items-center">
+            <AnimatedSection direction="left" className="max-w-[520px] py-24">
+
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border mb-8"
+                style={{
+                  background: 'rgba(108, 92, 231, 0.12)',
+                  borderColor: 'rgba(108, 92, 231, 0.3)',
+                }}>
+                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+                <span className="text-[11px] font-semibold tracking-[0.18em] text-violet-300 uppercase">
+                  About Us
+                </span>
               </div>
-              <h1 className="text-5xl md:text-6xl font-extrabold text-foreground mb-5 leading-tight tracking-[-0.02em]">
-                About <span className="text-gradient">Swajay</span>
+
+              {/* Headline — spotlight makes these pop */}
+              <h1
+                className="font-extrabold leading-tight tracking-[-0.02em] mb-6"
+                style={{
+                  fontSize: 'clamp(2.8rem, 6vw, 4.5rem)',
+                  color: 'rgba(255,255,255,0.78)',
+                }}
+              >
+                About{' '}
+                <span className="text-gradient">Swajay</span>
               </h1>
-              <p className="text-xl text-muted-foreground leading-relaxed">
-                Decades of expertise, modern innovation, and a commitment to solving real business challenges
+
+              {/* Subtext — more muted so spotlight contrast is visible */}
+              <p
+                className="text-lg leading-relaxed mb-10"
+                style={{ color: 'rgba(255,255,255,0.48)' }}
+              >
+                Decades of expertise, modern innovation, and a commitment to
+                solving real business challenges
               </p>
-            </AnimatedSection>
 
-            <AnimatedSection direction="right">
-              <div className="relative flex items-center justify-center w-full h-[380px]">
-                <GradientOrb size={300} color="purple" className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-                <div className="absolute w-[300px] h-[300px] rounded-full border border-dashed border-primary/30" />
-
-                {ADVANTAGES.map((adv, i) => {
+              {/* Advantages mini-grid */}
+              <div className="grid grid-cols-2 gap-3 mb-10">
+                {ADVANTAGES.map((adv) => {
                   const Icon = adv.icon
-                  const positions: CSSProperties[] = [
-                    { top: '0%',   left: '50%', transform: 'translate(-50%,0)' },
-                    { top: '50%',  right: '0%', transform: 'translate(0,-50%)' },
-                    { bottom: '0%',left: '50%', transform: 'translate(-50%,0)' },
-                    { top: '50%',  left: '0%',  transform: 'translate(0,-50%)' },
-                  ]
                   return (
                     <motion.div
-                      key={i}
-                      initial={{ opacity: 0, scale: 0 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.2 + i * 0.1, duration: 0.4 }}
-                      whileHover={{ scale: 1.08, transition: { duration: 0.15 } }}
-                      className="absolute w-28 h-28 bg-card border border-border rounded-2xl backdrop-blur-xl shadow-glass flex flex-col items-center justify-center text-center p-3 cursor-default"
-                      style={positions[i]}
+                      key={adv.label}
+                      whileHover={{ scale: 1.04, transition: { duration: 0.15 } }}
+                      className="flex items-center gap-2.5 p-3 rounded-xl cursor-default"
+                      style={{
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(255,255,255,0.09)',
+                      }}
                     >
-                      <div className="w-8 h-8 bg-gradient-to-br from-primary/20 to-[#8e44ad]/20 rounded-lg flex items-center justify-center text-primary mb-1.5">
-                        <Icon className="w-4 h-4" />
+                      <div
+                        className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{
+                          background:
+                            'linear-gradient(135deg, rgba(100,149,237,0.25), rgba(142,68,173,0.25))',
+                        }}
+                      >
+                        <Icon className="w-3.5 h-3.5 text-violet-300" />
                       </div>
-                      <div className="text-[11px] font-bold text-foreground whitespace-pre-line leading-tight">{adv.label}</div>
+                      <span
+                        className="text-xs font-semibold whitespace-pre-line leading-tight"
+                        style={{ color: 'rgba(255,255,255,0.72)' }}
+                      >
+                        {adv.label}
+                      </span>
                     </motion.div>
                   )
                 })}
-
-                <motion.div
-                  className="relative z-10 w-32 h-32 bg-gradient-to-br from-[#6495ed] via-[#6c5ce7] to-[#8e44ad] rounded-full flex items-center justify-center text-white text-center p-4"
-                  animate={{ boxShadow: ['0 0 30px rgba(108,92,231,0.35)', '0 0 55px rgba(142,68,173,0.45)', '0 0 30px rgba(108,92,231,0.35)'] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                >
-                  <span className="font-bold text-sm leading-tight">Swajay's Advantages</span>
-                </motion.div>
               </div>
+
+
             </AnimatedSection>
           </div>
         </div>
+
+        {/* ── Scroll cue ── */}
+        <motion.div
+          className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-1.5"
+          animate={{ y: [0, 7, 0] }}
+          transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <ChevronDown
+            className="w-5 h-5"
+            style={{ color: 'rgba(255,255,255,0.2)' }}
+          />
+        </motion.div>
+
       </section>
 
-      {/* ─── Partners Marquee ─── */}
+      {/* ─── Partners Marquee ──────────────────────────────────────────────── */}
       <section className="py-8 bg-background border-y border-border overflow-hidden">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-8 lg:px-12 mb-5">
           <div className="flex items-center gap-3">
@@ -123,7 +371,7 @@ export function AboutPage() {
         </div>
       </section>
 
-      {/* ─── Mission ─── */}
+      {/* ─── Mission ──────────────────────────────────────────────────────── */}
       <section className="py-24 bg-background">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-8 lg:px-12">
           <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -169,7 +417,7 @@ export function AboutPage() {
         </div>
       </section>
 
-      {/* ─── Vision ─── */}
+      {/* ─── Vision ───────────────────────────────────────────────────────── */}
       <section className="py-24 relative bg-card/40 overflow-hidden">
         <GradientOrb size={400} color="blue" className="bottom-0 right-0 opacity-40" />
         <div className="relative z-10 max-w-[1400px] mx-auto px-4 sm:px-8 lg:px-12">
@@ -193,7 +441,8 @@ export function AboutPage() {
                 Where We're <span className="text-gradient">Headed</span>
               </h2>
               <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-                To deliver intelligent Automation and AI solutions that empower organizations in Mortgage, BFSI/Healthcare, Commerce, and Legal domains to achieve superior customer outcomes and operational excellence.
+                To deliver intelligent Automation and AI solutions that empower organizations in Mortgage, BFSI/Healthcare,
+                Commerce, and Legal domains to achieve superior customer outcomes and operational excellence.
               </p>
               <ul className="space-y-4">
                 {['Industry-leading automation', 'Superior customer outcomes', 'Operational excellence'].map(item => (
@@ -210,7 +459,7 @@ export function AboutPage() {
         </div>
       </section>
 
-      {/* ─── Stats ─── */}
+      {/* ─── Stats ────────────────────────────────────────────────────────── */}
       <section className="py-20 bg-background">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-8 lg:px-12">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -225,7 +474,9 @@ export function AboutPage() {
               >
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-transparent to-transparent group-hover:from-primary/5 group-hover:to-[#8e44ad]/5 transition-all duration-500" />
                 <div className="relative">
-                  <div className="text-5xl lg:text-6xl font-extrabold text-gradient mb-2 tabular-nums leading-none">{s.v}</div>
+                  <div className="text-5xl lg:text-6xl font-extrabold text-gradient mb-2 tabular-nums leading-none">
+                    <CountUpNumber value={s.v} delay={i * 0.15} />
+                  </div>
                   <div className="font-semibold text-foreground mb-1">{s.l}</div>
                   <div className="text-sm text-muted-foreground">{s.sub}</div>
                 </div>
@@ -235,12 +486,12 @@ export function AboutPage() {
         </div>
       </section>
 
-      {/* ─── Team ─── */}
+      {/* ─── Team ─────────────────────────────────────────────────────────── */}
       <section className="py-24 relative bg-card/40 overflow-hidden">
         <GradientOrb size={500} color="purple" className="top-0 left-0 opacity-30" />
         <div className="relative z-10 max-w-[1400px] mx-auto px-4 sm:px-8 lg:px-12">
           <AnimatedSection className="text-center mb-14">
-            <p className="text-[11px] font-semibold tracking-[0.18em] text-primary uppercase mb-4">Leadership</p>
+            <p className="text-sm font-semibold tracking-[0.22em] text-primary uppercase mb-4">Leadership</p>
             <h2 className="text-4xl md:text-5xl font-extrabold text-foreground mb-3 leading-tight tracking-[-0.02em]">Our Team</h2>
             <p className="text-lg text-gradient font-semibold">Better outcomes, built together</p>
           </AnimatedSection>
@@ -250,18 +501,72 @@ export function AboutPage() {
               <motion.div key={person.name} variants={staggerItem}>
                 <motion.div
                   whileHover={{ y: -6, transition: { duration: 0.25 } }}
-                  className="group relative bg-card border border-border rounded-2xl p-4 text-center hover:border-primary/30 transition-colors cursor-default overflow-hidden"
+                  className="group relative bg-card border border-border rounded-2xl p-4 text-center hover:border-primary/40 transition-colors cursor-default overflow-hidden"
                 >
+                  {/* card gradient wash */}
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-primary/5 to-[#8e44ad]/5 rounded-2xl" />
+                  {/* top-edge sheen */}
                   <div className="absolute top-0 left-0 right-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
-                  <div className="relative mb-4">
+
+                  {/* image + hover overlay */}
+                  <div className="relative mb-3">
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-[#8e44ad]/30 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                     <img
                       src={person.img}
                       alt={person.name}
                       className="relative w-full aspect-square object-cover object-top rounded-xl ring-2 ring-primary/20 group-hover:ring-primary/40 transition-all duration-300"
                     />
+
+                    {/* ── Contact slide-up overlay ── */}
+                    <div
+                      className="
+                        absolute inset-0 rounded-xl
+                        flex flex-col items-center justify-center gap-2.5
+                        bg-[rgba(7,5,22,0.86)] backdrop-blur-[6px]
+                        opacity-0 translate-y-3
+                        group-hover:opacity-100 group-hover:translate-y-0
+                        transition-all duration-300 ease-out
+                      "
+                    >
+                      {/* Email */}
+                      <a
+                        href={`mailto:${person.email}`}
+                        onClick={e => e.stopPropagation()}
+                        className="
+                          flex items-center gap-2 w-[82%]
+                          px-3 py-2 rounded-lg
+                          text-[11px] text-violet-200/90 hover:text-white
+                          hover:bg-white/10 transition-colors duration-150
+                        "
+                      >
+                        <Mail size={13} className="shrink-0 text-violet-400" />
+                        <span className="truncate">{person.email}</span>
+                      </a>
+
+                      <div className="w-[72%] h-px bg-violet-500/20" />
+
+                      {/* LinkedIn */}
+                      <a
+                        href={person.linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        className="
+                          flex items-center gap-2 w-[82%]
+                          px-3 py-2 rounded-lg
+                          text-[11px] text-violet-200/90 hover:text-white
+                          hover:bg-white/10 transition-colors duration-150
+                        "
+                      >
+                        {/* LinkedIn logo mark */}
+                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 shrink-0 text-violet-400">
+                          <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                        </svg>
+                        <span>LinkedIn Profile</span>
+                      </a>
+                    </div>
                   </div>
+
                   <h3 className="relative text-sm font-bold text-foreground leading-tight">{person.name}</h3>
                 </motion.div>
               </motion.div>
@@ -269,6 +574,7 @@ export function AboutPage() {
           </StaggerContainer>
         </div>
       </section>
+
     </div>
   )
 }

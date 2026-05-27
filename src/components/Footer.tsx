@@ -1,7 +1,7 @@
 import { MapPin, Mail, Globe } from 'lucide-react'
 import { AnimatedSection } from './ui/AnimatedSection'
 
-type Page = 'home' | 'about' | 'services' | 'automation' | 'case-studies' | 'contact'
+type Page = 'home' | 'about' | 'services' | 'automation' | 'case-studies' | 'contact' | 'privacy' | 'terms'
 
 export function Footer({ onNav }: { onNav: (page: Page) => void }) {
   return (
@@ -101,8 +101,8 @@ export function Footer({ onNav }: { onNav: (page: Page) => void }) {
           <div className="pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-3 text-muted-foreground text-sm">
             <p>&copy; 2026 Swajay Business Solutions, LLC. All rights reserved.</p>
             <div className="flex gap-6">
-              <button className="cursor-pointer hover:text-primary transition-colors">Privacy Policy</button>
-              <button className="cursor-pointer hover:text-primary transition-colors">Terms of Service</button>
+              <button onClick={() => onNav('privacy')} className="cursor-pointer hover:text-primary transition-colors">Privacy Policy</button>
+              <button onClick={() => onNav('terms')} className="cursor-pointer hover:text-primary transition-colors">Terms of Service</button>
             </div>
           </div>
         </AnimatedSection>

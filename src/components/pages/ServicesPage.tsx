@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { FileText, Search, Clock, Zap, Settings, Key, Code2, Bot, BarChart3, Cloud, Home, ChevronRight, ArrowRight } from 'lucide-react'
 import { AnimatedSection, StaggerContainer, staggerItem } from '../ui/AnimatedSection'
@@ -51,11 +51,27 @@ function ServiceCardItem({ card }: { card: ServiceCard }) {
   )
 }
 
-export function ServicesPage({ onContact }: { onContact: () => void }) {
-  const [activeTab, setActiveTab] = useState<'mortgage' | 'technology'>('mortgage')
+export function ServicesPage({ onContact, initialTab, scrollToSection, navKey }: {
+  onContact: () => void
+  initialTab?: 'mortgage' | 'technology'
+  scrollToSection?: string
+  navKey?: number
+}) {
+  const [activeTab, setActiveTab] = useState<'mortgage' | 'technology'>(initialTab ?? 'mortgage')
+
+  // navKey increments on every nav click, ensuring re-fire even when
+  // tab/section are unchanged (e.g. two different mortgage sub-items).
+  useEffect(() => {
+    if (initialTab) setActiveTab(initialTab)
+    if (!scrollToSection) return
+    const id = setTimeout(() => {
+      document.getElementById(scrollToSection)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 420)
+    return () => clearTimeout(id)
+  }, [navKey, initialTab, scrollToSection])
 
   return (
-    <div className="pt-20 bg-background overflow-hidden">
+    <div className="pt-[86px] bg-background overflow-hidden">
 
       {/* ─── Hero ─── */}
       <section className="py-24 relative overflow-hidden bg-card/40">
@@ -114,7 +130,7 @@ export function ServicesPage({ onContact }: { onContact: () => void }) {
       </section>
 
       {/* ─── Tabs ─── */}
-      <section className="py-24 bg-background">
+      <section id="services-cards" className="py-24 bg-background scroll-mt-[86px] border-b border-border">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-8 lg:px-12">
           <AnimatedSection className="flex justify-center mb-14">
             <div className="inline-flex bg-card rounded-2xl p-1.5 gap-1 border border-border">
@@ -182,24 +198,38 @@ export function ServicesPage({ onContact }: { onContact: () => void }) {
       </section>
 
       {/* ─── CTA ─── */}
-      <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#4b0082] via-[#6c5ce7] to-[#6495ed]" />
-        <div className="absolute inset-0 bg-grid-dark opacity-20" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-white/5 blur-[100px] pointer-events-none" />
+      <section className="py-24 relative overflow-hidden bg-card/60 border-t border-border">
+        {/* Gradient accent line sitting on top of the border */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-[#8e44ad]/10" />
+        <div className="absolute inset-0 bg-[size:60px_60px] bg-grid-dark opacity-30" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-primary/6 blur-[120px] pointer-events-none" />
+        <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] rounded-full bg-[#6495ed]/6 blur-[100px] pointer-events-none" />
         <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-8 text-center">
           <AnimatedSection className="space-y-6">
-            <p className="text-[11px] font-semibold tracking-[0.18em] text-white/70 uppercase">Get Started</p>
-            <h2 className="text-4xl md:text-5xl font-extrabold text-white leading-tight tracking-[-0.02em]">Ready to Get Started?</h2>
-            <p className="text-xl text-white/70 max-w-xl mx-auto">Let's discuss how our services can transform your business operations and drive growth.</p>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              <span className="text-[11px] font-semibold tracking-[0.18em] text-primary uppercase">Get Started</span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-foreground leading-tight tracking-[-0.02em]">
+              Ready to Get <span className="text-gradient">Started?</span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-xl mx-auto">
+              Let's discuss how our services can transform your business operations and drive growth.
+            </p>
             <div className="flex flex-wrap gap-4 justify-center">
-              <motion.button whileHover={{ scale: 1.04, boxShadow: '0 0 48px rgba(255,255,255,0.2)' }} whileTap={{ scale: 0.97 }}
+              <motion.button
+                whileHover={{ scale: 1.04, boxShadow: '0 0 48px rgba(108,92,231,0.45)' }}
+                whileTap={{ scale: 0.97 }}
                 onClick={onContact}
-                className="cursor-pointer flex items-center gap-2 px-8 py-4 bg-white text-[#6c5ce7] rounded-xl font-bold shadow-glow">
+                className="cursor-pointer flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#6495ed] via-[#6c5ce7] to-[#8e44ad] text-white rounded-xl font-bold shadow-glow">
                 Request Demo <ArrowRight className="w-4 h-4" />
               </motion.button>
-              <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
+              <motion.button
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={onContact}
-                className="cursor-pointer px-8 py-4 border-2 border-white/40 text-white rounded-xl font-semibold hover:bg-white/10 transition-colors">
+                className="cursor-pointer px-8 py-4 bg-card border border-border text-muted-foreground rounded-xl font-semibold hover:text-foreground hover:border-primary/40 transition-colors">
                 Contact Sales
               </motion.button>
             </div>
