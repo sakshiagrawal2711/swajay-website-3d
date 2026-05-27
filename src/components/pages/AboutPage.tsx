@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect, useState, type CSSProperties } from 'react'
+import { useRef, useCallback, useEffect, useState } from 'react'
 import { motion, useMotionValue, useInView, animate } from 'framer-motion'
 import {
   Sparkles, Target, Eye, CheckCircle2,
